@@ -27,7 +27,9 @@ class UpSample(nn.Module):
         self.align_corners = align_corners
 
     def execute(self, x:jt.Var) -> jt.Var:
-        return jt.nn.interpolate(x, None, self.scale_factor, self.mode, self.align_corners)
+        return jt.nn.interpolate(x, size=None, 
+            scale_factor=self.scale_factor, 
+            mode=self.mode, align_corners=self.align_corners)
 
 class SelfAttention(nn.Module):
 
@@ -145,7 +147,7 @@ class UNet(nn.Module):
         self.outc = nn.Conv(64, c_out, 1)
 
     def pos_encoding(self, t:jt.Var, channels: int):
-        inv_freq:jt.Var = (1.0 / (10000 ** (jt.arange(0, channels, 2, device=self.device).float() / channels)))
+        inv_freq:jt.Var = (1.0 / (10000 ** (jt.arange(0, channels, 2).float() / channels)))
         pos_enc_a = jt.sin((t.repeat(1, (channels // 2)) * inv_freq))
         pos_enc_b = jt.cos((t.repeat(1, (channels // 2)) * inv_freq))
         pos_enc = jt.contrib.concat([pos_enc_a, pos_enc_b], dim=-1)
@@ -153,7 +155,7 @@ class UNet(nn.Module):
 
     def execute(self, x:jt.Var, t:jt.Var) -> jt.Var:
         t = jt.unsqueeze(t, -1)
-        t = t.type(jt.float)
+        #t = t.type(jt.float)
         t = self.pos_encoding(t, self.time_dim)
         x1:jt.Var = self.inc(x)
         x2:jt.Var = self.down1(x1, t)
